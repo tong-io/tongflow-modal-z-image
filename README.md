@@ -1,6 +1,6 @@
 # tongflow-modal-z-image
 
-Official TongFlow plugin. Text-to-image generation with **Z-Image-Turbo** (`Tongyi-MAI/Z-Image-Turbo`), running on a GPU via [Modal](https://modal.com).
+Official [TongFlow](https://github.com/tong-io/tongflow) plugin. Text-to-image generation with **Z-Image-Turbo** (`Tongyi-MAI/Z-Image-Turbo`), running on a GPU via [Modal](https://modal.com).
 
 ## Capabilities
 
