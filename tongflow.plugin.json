@@ -1,4 +1,9 @@
 {
+    "plugin": {
+        "name": "Z-Image Turbo",
+        "description": "Text-to-image generation with Z-Image-Turbo (Alibaba Tongyi-MAI).",
+        "icon": "/plugins/tongflow-modal-z-image.svg"
+    },
     "env": [
         {
             "key": "MODAL_TOKEN_ID",
