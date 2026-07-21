@@ -37,12 +37,14 @@ volume = modal.Volume.from_name(volume_name, create_if_missing=True)
 
 # ── app ──────────────────────────────────────────────────────────────────────
 
-app = modal.App(Path(__file__).resolve().parent.name)
+APP_NAME = Path(__file__).resolve().parent.name
+app = modal.App(APP_NAME)
 
 image = (
     modal.Image.from_registry("pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime")
     .pip_install(
-        "tongflow==0.1.0",
+        "tongflow==0.2.13",
+        "fastapi[standard]",
         "diffusers==0.37.1",
         "transformers==5.4.0",
         "safetensors==0.7.0",
@@ -133,3 +135,28 @@ class Inference:
             seed=int(input.seed) if input.seed is not None else 42,
         )
         return ImageGenOutput(success=True, image=asset(raw, mime="image/png"))
+
+    # Cloud single-node self-serve: ONE container, direct browser stream. The
+    # browser's EventSource is 302'd here with taskId/token/origin; serve_stream
+    # _from_spec (SDK) fetches the run spec from the Worker, runs the slot
+    # in-container, and streams progress + result. Streaming dodges the 150s
+    # cap. Label is uniform (`<app>-serve`) so the Worker derives the URL.
+    @modal.fastapi_endpoint(method="GET", label=f"{APP_NAME}-serve")
+    def serve(self, taskId: str = "", token: str = "", origin: str = ""):
+        from fastapi.responses import StreamingResponse
+        from tongflow import serve_stream_from_spec
+
+        return StreamingResponse(
+            serve_stream_from_spec(
+                origin,
+                taskId,
+                token,
+                __file__,
+                invoke=lambda m, inp: getattr(self, m).local(inp),
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Access-Control-Allow-Origin": "*",
+            },
+        )
