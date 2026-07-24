@@ -43,7 +43,7 @@ app = modal.App(APP_NAME)
 image = (
     modal.Image.from_registry("pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime")
     .pip_install(
-        "tongflow==0.2.13",
+        "tongflow==0.2.16",
         "fastapi[standard]",
         "diffusers==0.37.1",
         "transformers==5.4.0",
