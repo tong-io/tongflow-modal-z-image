@@ -19,7 +19,32 @@ from tongflow import deploy
 from tongflow.models.image_gen import ImageGenInput, ImageGenOutput
 from tongflow.node_slots import NodeSlots
 from tongflow.protocol import asset
-from tongflow.slots import node_slot
+from tongflow.slots import current_params, node_slot
+
+
+def _adv(name: str, default):
+    """Advanced-section override (``TONGFLOW_SLOT_PARAMS``) or the plugin default."""
+    v = current_params().get(name)
+    if v is None:
+        return default
+    if isinstance(default, bool):
+        return bool(v)
+    if isinstance(default, int):
+        return int(v)
+    if isinstance(default, float):
+        return float(v)
+    return v
+
+# Per-run knobs offered under the node's collapsed "Advanced" section.
+# Pure literal (the platform scanner reads it by AST, never imports this
+# module). Values reach the handlers via current_params(); an untouched
+# control is absent there and falls back to the plugin default.
+TONGFLOW_SLOT_PARAMS = {
+    "image-gen": {
+        "steps": {"type": "integer", "default": 8, "min": 1, "max": 50, "label": "Steps"},
+        "guidance_scale": {"type": "number", "default": 0.0, "min": 0.0, "max": 10.0, "step": 0.5, "label": "Guidance scale"},
+    },
+}
 
 
 _cfg: dict[str, Any] = {}
@@ -43,7 +68,7 @@ app = modal.App(APP_NAME)
 image = (
     modal.Image.from_registry("pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime")
     .pip_install(
-        "tongflow==0.2.21",
+        "tongflow==0.3.3",
         "fastapi[standard]",
         "diffusers==0.37.1",
         "transformers==5.4.0",
@@ -130,8 +155,8 @@ class Inference:
             text,
             height=input.height if input.height is not None else 1024,
             width=input.width if input.width is not None else 1024,
-            num_inference_steps=DEFAULT_NUM_INFERENCE_STEPS,
-            guidance_scale=DEFAULT_GUIDANCE_SCALE,
+            num_inference_steps=_adv("steps", DEFAULT_NUM_INFERENCE_STEPS),
+            guidance_scale=_adv("guidance_scale", DEFAULT_GUIDANCE_SCALE),
             seed=int(input.seed) if input.seed is not None else 42,
         )
         return ImageGenOutput(success=True, image=asset(raw, mime="image/png"))
